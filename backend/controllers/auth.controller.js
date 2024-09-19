@@ -37,10 +37,10 @@ export const signin = async (req, res, next) => {
           .status(200)
           .json(rest);
       } else {
-        return next(errorHandler(401, "Invalid credentials from 1"));
+        return next(errorHandler(401, "Invalid credentials"));
       }
     } else {
-      return next(errorHandler(401, "Invalid credentials from 2"));
+      return next(errorHandler(401, "User not Found"));
     }
   } catch (error) {
     next(error);
