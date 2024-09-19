@@ -1,5 +1,7 @@
 import User from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
+import { errorHandler } from "../utils/error.js";
+import jwt from "jsonwebtoken";
 
 export const signup = async (req, res, next) => {
   const { Username, Email, Password } = req.body;
@@ -12,6 +14,34 @@ export const signup = async (req, res, next) => {
   try {
     await newUser.save();
     res.status(201).json({ message: "user added" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const signin = async (req, res, next) => {
+  const { Email, Password } = req.body;
+  try {
+    const validUser = await User.findOne({ email: Email });
+    if (validUser) {
+      const validPassword = bcryptjs.compareSync(Password, validUser.password);
+      if (validPassword) {
+        const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
+        const { password: hashedPassword, ...rest } = validUser._doc;
+        const expiryDate = new Date(Date.now() + 3600000); // 1 hour
+        res
+          .cookie("access_token", token, {
+            httpOnly: true,
+            expires: expiryDate,
+          })
+          .status(200)
+          .json(rest);
+      } else {
+        return next(errorHandler(401, "Invalid credentials from 1"));
+      }
+    } else {
+      return next(errorHandler(401, "Invalid credentials from 2"));
+    }
   } catch (error) {
     next(error);
   }
