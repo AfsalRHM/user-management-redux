@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function SignUp() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({});
 
   const [error, setError] = useState(null);
@@ -27,8 +29,9 @@ function SignUp() {
       setLoading(false);
       if (data.success === false) {
         setError(true);
-        return
+        return;
       }
+      navigate("/sign-in");
     } catch (error) {
       setLoading(false);
       setError(true);
@@ -60,7 +63,10 @@ function SignUp() {
           className="bg-slate-100 p-3 rounded-lg"
           onChange={handleChange}
         />
-        <button disabled={loading} className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80">
+        <button
+          disabled={loading}
+          className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80"
+        >
           {loading ? "loading..." : "Sign Up"}
         </button>
       </form>
@@ -72,7 +78,7 @@ function SignUp() {
           </span>
         </Link>
       </div>
-      <p className="text-red-700 mt-5">{error && 'Something is Wrong.'}</p>
+      <p className="text-red-700 mt-5">{error && "Something is Wrong."}</p>
     </div>
   );
 }
