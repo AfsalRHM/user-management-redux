@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 import {
   signInStart,
@@ -44,6 +44,11 @@ function AdminSignIn() {
       dispatch(signInFailure(error));
     }
   };
+
+  const {currentUser} = useSelector((state)=>state.user)
+  if(currentUser){
+    return <Navigate to='/admin' replace/>
+  }
 
   return (
     <div className="p-3 max-w-lg mx-auto">
