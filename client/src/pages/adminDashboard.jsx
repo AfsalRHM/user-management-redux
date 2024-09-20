@@ -6,9 +6,18 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [isAddUser, setIsAddUser] = useState(false); // To track if the modal is for adding or editing
+  const [isAddUser, setIsAddUser] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const navigate = useNavigate();
+
+  const filteredUsers = users.filter((user) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      user.username.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query)
+    );
+  });
 
   const goBack = () => {
     navigate("/admin");
@@ -103,6 +112,15 @@ export default function AdminDashboard() {
       <h1 className="text-3xl font-bold text-center mb-6 text-slate-700">
         Admin Dashboard
       </h1>
+      <div>
+      <input
+            type="text"
+            placeholder="Search Users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="mb-3 border border-gray-300 px-4 py-2 rounded-lg mr-4"
+          />
+      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-300">
           <thead>
@@ -122,7 +140,7 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user, index) => (
+            {filteredUsers.map((user, index) => (
               <tr key={user._id} className="hover:bg-gray-50">
                 <td className="py-2 px-4 border-b text-gray-600">
                   {index + 1}
