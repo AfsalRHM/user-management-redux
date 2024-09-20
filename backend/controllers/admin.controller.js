@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import bcryptjs from "bcryptjs";
 
 export const fetchUsers = async (req, res) => {
   try {
@@ -29,14 +30,31 @@ export const editSave = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-    try {
-
-        const result = await User.deleteOne({_id: req.params.id});
-        if (result) {
-            res.status(200).json({message: "User Deleted"})
-        }
-    } catch (error) {
-        console.error("Error Deleting user:", error);
-    res.status(500).json({ message: "Internal server error" }); // Send error response
+  try {
+    const result = await User.deleteOne({ _id: req.params.id });
+    if (result) {
+      res.status(200).json({ message: "User Deleted" });
     }
-}
+  } catch (error) {
+    console.error("Error Deleting user:", error);
+    res.status(500).json({ message: "Internal server error" }); 
+  }
+};
+
+export const adminAddUser = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      is_admin: false
+    });
+    const updatedUser = await newUser.save();
+    res.status(200).json({message: "user Added", updatedUser})
+  } catch (error) {
+    console.error("Error Deleting user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

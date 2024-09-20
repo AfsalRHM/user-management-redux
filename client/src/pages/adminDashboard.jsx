@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrash } from "react-icons/fa"; // Importing icons
+import { FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAddUser, setIsAddUser] = useState(false); // To track if the modal is for adding or editing
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const goBack = () => {
-    navigate('/admin')
+    navigate("/admin");
   };
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function AdminDashboard() {
         const response = await fetch("/api/admin/fetchusers", {
           method: "GET",
         });
-        const data = await response.json(); // Assuming the response is in JSON format
+        const data = await response.json();
         setUsers(data);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -31,14 +32,20 @@ export default function AdminDashboard() {
 
   const handleEdit = (user) => {
     setCurrentUser(user);
+    setIsAddUser(false); // Ensure it's in edit mode
     setIsModalOpen(true);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/admin/edituser/${currentUser._id}`, {
-        method: "PUT",
+      const method = isAddUser ? "POST" : "PUT";
+      const url = isAddUser
+        ? "/api/admin/adduser"
+        : `/api/admin/edituser/${currentUser._id}`;
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -46,18 +53,22 @@ export default function AdminDashboard() {
       });
 
       if (!response.ok) {
-        const errorMessage = await response.text(); // Get error message if response is not ok
+        const errorMessage = await response.text();
         throw new Error(errorMessage);
       }
 
       const { updatedUser, message } = await response.json();
       console.log(message);
 
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === updatedUser._id ? updatedUser : user
-        )
-      );
+      if (isAddUser) {
+        setUsers((prevUsers) => [...prevUsers, updatedUser]);
+      } else {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === updatedUser._id ? updatedUser : user
+          )
+        );
+      }
 
       setIsModalOpen(false);
     } catch (error) {
@@ -77,8 +88,14 @@ export default function AdminDashboard() {
       const { message } = await response.json();
       setUsers((prevUsers) => prevUsers.filter((u) => u._id !== user._id));
     } catch (error) {
-      console.error("Error saving user:", error);
+      console.error("Error deleting user:", error);
     }
+  };
+
+  const addUser = () => {
+    setCurrentUser({ username: "", email: "", password: "" });
+    setIsAddUser(true);
+    setIsModalOpen(true);
   };
 
   return (
@@ -134,16 +151,29 @@ export default function AdminDashboard() {
             ))}
           </tbody>
         </table>
-        <div className="flex justify-center items-center">
-          <button onClick={goBack} className="bg-blue-400 mt-9 p-2 rounded-full self-center hover:opacity-90">Go Back</button>
+        <div className="flex justify-center items-center gap-8">
+          <button
+            onClick={addUser}
+            className="text-white bg-gray-600 mt-9 p-2 rounded-full self-center hover:opacity-90"
+          >
+            Add user
+          </button>
+          <button
+            onClick={goBack}
+            className="bg-blue-400 mt-9 p-2 rounded-full self-center hover:opacity-90"
+          >
+            Go Back
+          </button>
         </div>
       </div>
 
-      {/* Edit User Modal */}
+      {/* Add/Edit User Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h2 className="text-lg font-semibold mb-4">Edit User</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              {isAddUser ? "Add User" : "Edit User"}
+            </h2>
             <form onSubmit={handleSave}>
               <div className="mb-4">
                 <label className="block mb-2">Name</label>
@@ -169,6 +199,22 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
+              {isAddUser ? (
+                <div className="mb-4">
+                  <label className="block mb-2">Password</label>
+                  <input
+                    type="password"
+                    value={currentUser?.password || ""}
+                    onChange={(e) =>
+                      setCurrentUser({ ...currentUser, password: e.target.value })
+                    }
+                    className="border border-gray-300 p-2 w-full rounded"
+                    required
+                  />
+                </div>
+              ) : (
+                ""
+              )}
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -181,7 +227,7 @@ export default function AdminDashboard() {
                   type="submit"
                   className="bg-blue-500 text-white px-4 py-2 rounded"
                 >
-                  Save
+                  {isAddUser ? "Add" : "Save"}
                 </button>
               </div>
             </form>
