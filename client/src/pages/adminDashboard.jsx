@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { Navigate, useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -106,6 +107,12 @@ export default function AdminDashboard() {
     setIsAddUser(true);
     setIsModalOpen(true);
   };
+
+  const {currentAdmin} = useSelector((state) => state.admin);
+
+  if (!currentAdmin) {
+    return <Navigate to='/admin-sign-in' replace />
+  }
 
   return (
     <div className="p-4">

@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import {
-  signInStart,
-  signInFailure,
-  signInSuccess,
-} from "../redux/user/userSlice";
+import { signInSuccess, signInFailure } from "../redux/user/adminSlice";
 
 import { useDispatch, useSelector } from "react-redux";
 import OAuth from "../components/OAuth";
@@ -16,7 +12,7 @@ function AdminSignIn() {
 
   const [formData, setFormData] = useState({});
 
-  const { error, loading } = useSelector((state) => state.user);
+  const { error } = useSelector((state) => state.user);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -25,7 +21,6 @@ function AdminSignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      dispatch(signInStart());
       const res = await fetch("/api/auth/admin-sign-in", {
         method: "POST",
         headers: {
@@ -45,9 +40,9 @@ function AdminSignIn() {
     }
   };
 
-  const {currentUser} = useSelector((state)=>state.user)
-  if(currentUser){
-    return <Navigate to='/admin' replace/>
+  const { currentAdmin } = useSelector((state) => state.admin);
+  if (currentAdmin) {
+    return <Navigate to="/admin" replace />;
   }
 
   return (
@@ -70,11 +65,8 @@ function AdminSignIn() {
           className="bg-slate-100 p-3 rounded-lg"
           onChange={handleChange}
         />
-        <button
-          disabled={loading}
-          className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80"
-        >
-          {loading ? "loading..." : "Sign In"}
+        <button className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80">
+          Sign In
         </button>
         {/* <OAuth /> */}
       </form>
