@@ -20,7 +20,7 @@ function AppContent() {
         location.pathname !== "/admin" &&
         location.pathname !== "/admin-dashboard" && <Header />}
       <Routes>
-      <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home />} />
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
         <Route element={<PrivateRoute />}>

@@ -1,6 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const Home = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -8,6 +8,9 @@ const Home = () => {
   const handleGoToProfile = () => {
     navigate("/profile");
   };
+  if(!currentUser){
+    return <Navigate to='/sign-in' replace/>
+  }
   return (
     <div className="flex justify-center items-center min-h-screen flex-col">
       {currentUser ? (
