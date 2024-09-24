@@ -11,11 +11,11 @@ export const fetchUsers = async (req, res) => {
 
 export const editSave = async (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, profilepicture } = req.body;
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { username, email },
-      { new: true } // Return the updated document
+      { username, email, profilepicture },
+      { new: true } 
     );
 
     if (!updatedUser) {

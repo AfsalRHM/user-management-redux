@@ -1,24 +1,30 @@
-import React, { useEffect, useState } from "react";
+import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
+import React, { useEffect, useRef, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router-dom";
+import { app } from "../firebase";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isAddUser, setIsAddUser] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [image, setImage] = useState(undefined);
+  const [imagePercent, setImagePercent] = useState(0);
 
   const navigate = useNavigate();
+
+  const fileRef = useRef(null);
 
   const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase();
     return (
       user.username.toLowerCase().includes(query) ||
       user.email.toLowerCase().includes(query)
-    );
-  });
+    );
+  });
 
   const goBack = () => {
     navigate("/admin");
@@ -42,7 +48,7 @@ export default function AdminDashboard() {
 
   const handleEdit = (user) => {
     setCurrentUser(user);
-    setIsAddUser(false); // Ensure it's in edit mode
+    setIsAddUser(false);
     setIsModalOpen(true);
   };
 
@@ -103,16 +109,45 @@ export default function AdminDashboard() {
   };
 
   const addUser = () => {
-    setCurrentUser({ username: "", email: "", password: "" });
+    setCurrentUser({ username: "", email: "", password: "", profilepicture: "" });
     setIsAddUser(true);
     setIsModalOpen(true);
   };
 
-  const {currentAdmin} = useSelector((state) => state.admin);
+  const { currentAdmin } = useSelector((state) => state.admin);
 
   if (!currentAdmin) {
-    return <Navigate to='/admin-sign-in' replace />
+    return <Navigate to="/admin-sign-in" replace />;
   }
+
+  useEffect(() => {
+    if (image) {
+      handleImageUpload(image);
+    }
+  }, [image]);
+
+  const handleImageUpload = async (image) => {
+    const storage = getStorage(app);
+    const fileName = new Date().getTime() + image.name;
+    const storageRef = ref(storage, fileName);
+    const uploadTask = uploadBytesResumable(storageRef, image);
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setImagePercent(Math.round(progress));
+      },
+      (error) => {
+        setImageError(true);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadUrl) => {
+          setCurrentUser({ ...currentUser, profilepicture: downloadUrl })
+        });
+      }
+    );
+  };
 
   return (
     <div className="p-4">
@@ -120,13 +155,13 @@ export default function AdminDashboard() {
         Admin Dashboard
       </h1>
       <div>
-      <input
-            type="text"
-            placeholder="Search Users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="mb-3 border border-gray-300 px-4 py-2 rounded-lg mr-4"
-          />
+        <input
+          type="text"
+          placeholder="Search Users..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="mb-3 border border-gray-300 px-4 py-2 rounded-lg mr-4"
+        />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-300">
@@ -134,6 +169,9 @@ export default function AdminDashboard() {
             <tr>
               <th className="py-2 px-4 border-b bg-gray-100 text-left text-sm font-semibold text-gray-700">
                 ID
+              </th>
+              <th className="py-2 px-4 border-b bg-gray-100 text-left text-sm font-semibold text-gray-700">
+                Profile pic
               </th>
               <th className="py-2 px-4 border-b bg-gray-100 text-left text-sm font-semibold text-gray-700">
                 Name
@@ -153,12 +191,19 @@ export default function AdminDashboard() {
                   {index + 1}
                 </td>
                 <td className="py-2 px-4 border-b text-gray-600">
+                  <img
+                    src={user.profilepicture}
+                    className="w-11 h-11 rounded-full object-cover border border-gray-300"
+                    alt="User Profile"
+                  />
+                </td>
+                <td className="py-2 px-4 border-b text-gray-600">
                   {user.username}
                 </td>
                 <td className="py-2 px-4 border-b text-gray-600">
                   {user.email}
                 </td>
-                <td className="py-2 px-4 border-b text-gray-600 flex space-x-2">
+                <td className="py-2 px-4 border-b text-gray-600 space-x-2">
                   <button
                     onClick={() => handleEdit(user)}
                     className="text-blue-500 hover:text-blue-700"
@@ -194,63 +239,79 @@ export default function AdminDashboard() {
 
       {/* Add/Edit User Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h2 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h2 className="text-xl font-bold text-center mb-6">
               {isAddUser ? "Add User" : "Edit User"}
             </h2>
             <form onSubmit={handleSave}>
-              <div className="mb-4">
-                <label className="block mb-2">Name</label>
+              <div className="flex flex-col items-center mb-6">
+                <input
+                  type="file"
+                  ref={fileRef}
+                  hidden
+                  accept="image/*"
+                  onChange={(e) => setImage(e.target.files[0])}
+                />
+                <img
+                  className="h-24 w-24 rounded-full object-cover cursor-pointer mb-4"
+                  src={currentUser.profilepicture}
+                  alt="profile_pic"
+                  onClick={() => fileRef.current.click()}
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-gray-700 mb-1">Name</label>
                 <input
                   type="text"
                   value={currentUser?.username || ""}
                   onChange={(e) =>
                     setCurrentUser({ ...currentUser, username: e.target.value })
                   }
-                  className="border border-gray-300 p-2 w-full rounded"
+                  className="border border-gray-300 p-3 w-full rounded focus:ring-2 focus:ring-blue-400"
                   required
                 />
               </div>
-              <div className="mb-4">
-                <label className="block mb-2">Email</label>
+              <div className="mb-6">
+                <label className="block text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={currentUser?.email || ""}
                   onChange={(e) =>
                     setCurrentUser({ ...currentUser, email: e.target.value })
                   }
-                  className="border border-gray-300 p-2 w-full rounded"
+                  className="border border-gray-300 p-3 w-full rounded focus:ring-2 focus:ring-blue-400"
                   required
                 />
               </div>
-              {isAddUser ? (
-                <div className="mb-4">
-                  <label className="block mb-2">Password</label>
+              {isAddUser && (
+                <div className="mb-6">
+                  <label className="block text-gray-700 mb-1">Password</label>
                   <input
                     type="password"
                     value={currentUser?.password || ""}
                     onChange={(e) =>
-                      setCurrentUser({ ...currentUser, password: e.target.value })
+                      setCurrentUser({
+                        ...currentUser,
+                        password: e.target.value,
+                      })
                     }
-                    className="border border-gray-300 p-2 w-full rounded"
+                    className="border border-gray-300 p-3 w-full rounded focus:ring-2 focus:ring-blue-400"
                     required
                   />
                 </div>
-              ) : (
-                ""
               )}
-              <div className="flex justify-end">
+              <div className="flex justify-end space-x-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="mr-2 text-gray-500"
+                  className="text-gray-500 hover:text-gray-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition"
                 >
                   {isAddUser ? "Add" : "Save"}
                 </button>
